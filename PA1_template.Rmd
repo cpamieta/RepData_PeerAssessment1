@@ -2,19 +2,117 @@
 
 
 ## Loading and preprocessing the data
+```{r}
+temp = tempfile()
+download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",temp)
 
-
-
+data = read.csv(unz(temp, "activity.csv"))
+x= is.na(data[1])
+data1 = data[!x,]
+```
 ## What is mean total number of steps taken per day?
+```{r}
+sums = aggregate(steps ~ date , data = data1, FUN = sum)
+means = aggregate(steps ~ date , data = data1, FUN = mean)
+medians = aggregate(steps ~ date , data = data1, FUN = median)
 
+tot = cbind(means,medians[2])
+colnames(tot) = c("date", "mean steps", "median steps")
+
+hist(sums$steps,xlab = "steps", main = "total steps per day") 
+
+```
+
+The Calculated mean and median total number of steps taken per day are.
+
+```{r showtable,results='asis'}
+library(xtable)
+xt = xtable(tot)
+print(xt, type = "html")
+
+
+```
 
 
 ## What is the average daily activity pattern?
+```{r}
 
+avg = aggregate(steps ~ interval , data = data1, FUN = mean)
 
+plot(avg$interval, avg$steps,xlab = "5 sec interval",ylab = "steps",type = "l")
+maxx = max(avg[2])
+intv = avg[2] == maxx
+max1 = avg[intv,]
+
+```
+The interval,that contains the maximum number of steps is `r max1[1]`
 
 ## Imputing missing values
+```{r}
+xx = sum(x)
 
+data3 = data[x,]
+data4 = data3[2:3]
+
+merged.data <- merge(data3, avg, by="interval")
+
+final = merged.data[c(1,3,4)]
+colnames(final) = c("interval","date","steps")
+ fin.merg = rbind(final,data1)
+
+sums = aggregate(steps ~ date , data = fin.merg, FUN = sum)
+means = aggregate(steps ~ date , data = fin.merg, FUN = mean)
+medians = aggregate(steps ~ date , data = fin.merg, FUN = median)
+
+tot = cbind(means,medians[2])
+colnames(tot) = c("date", "mean steps", "median steps")
+
+hist(sums$steps,xlab = "steps", main = "total steps per day with na values replaced") 
+
+
+```
+
+The total number of missing values in the dataset is `r xx`
+
+
+
+
+The new Calculated mean and median of total number of steps taken per day are.
+
+```{r showtabl,results='asis'}
+xtt = xtable(tot)
+print(xtt, type = "html")
+
+
+```
+
+Overall the structure of the graph looks unchanged from the orignal graph. The mean and median valuses on each day looks also unchancged, the only thing I notice was that now some new dates are showing up.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+``` {r}
+fin.merg$date <- as.Date(fin.merg$date)
+fin.merg=cbind(fin.merg, weekend=0)
+
+for (i in 1:nrow(fin.merg)) {
+  if(weekdays(fin.merg[i,"date"])== "Saturday" || weekdays(fin.merg[i,"date"])== "Sunday")
+    {
+        
+    fin.merg[i,"weekend"] = 1
+    }
+}
+weekday = fin.merg[4] == 1
+weekday1 = fin.merg[!weekday,]
+weekend= fin.merg[weekday,]
+
+par(mfrow = c(2, 1),mar = c(2, 2, 2, 2))
+
+plot(weekday1$interval, weekday1$steps,xlab = "5 sec interval",ylab = "steps",main= "weekday",type='l' )
+plot(weekend$interval, weekend$steps,xlab = "5 sec interval",ylab = "steps",main= "weekend",type='l' )
+
+
+
+
+```
